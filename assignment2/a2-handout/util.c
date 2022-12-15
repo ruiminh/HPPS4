@@ -17,7 +17,7 @@ double distance(int d, const double *x, const double *y) {
 
 //function that moves all index values from 'position' one index down, and then inserts the new 'index'.
 void insert_index(int index, int position, int k, int* closest){
-  for(int i = k-1; i > position; i--){
+  for(int i = k-2; i >= position; i--){
     closest[i+1] = closest[i];
   }
   closest[position] = index;

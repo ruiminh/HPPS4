@@ -33,7 +33,23 @@ int main(){
 
   int* list = malloc(5*sizeof(int));
 
+  list[0] = 0;
+  list[1] = 1;
+  list[2] = 2;
+  list[3] = 3;
+  list[4] = 4;
 
+  for(int i = 0; i < 5; i++){
+    printf("%d ", list[i]);
+  }
+  printf("\n");
+
+  insert_index(9,2,5,list);
+
+  for(int i = 0; i < 5; i++){
+    printf("%d ", list[i]);
+  }
+  printf("\n");
 }
 
 

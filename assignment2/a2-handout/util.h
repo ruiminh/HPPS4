@@ -31,4 +31,6 @@ int insert_if_closer(int k, int d,
                      const double *points, int *closest, const double *query,
                      int candidate);
 
+void insert_index(int index, int position, int k, int* closest);
+
 #endif
