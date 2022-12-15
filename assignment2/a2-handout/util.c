@@ -73,7 +73,7 @@ int insert_if_closer(int k, int d,
     }
     ismid = true;
   }
-  else if(ismid){
+  if(ismid){
     insert_index(candidate, midid, k, closest);
   }
   else{
