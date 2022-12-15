@@ -75,6 +75,7 @@ int insert_if_closer(int k, int d,
   }
   if(ismid){
     insert_index(candidate, midid, k, closest);
+    return 1;
   }
   else{
     for(int i = midid + 1; i < k; i++){
