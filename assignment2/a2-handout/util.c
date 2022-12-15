@@ -7,7 +7,7 @@
 
 double distance(int d, const double *x, const double *y) {
   assert(d > 0);
-  double sum;
+  double sum = 0;
   for(int i = 0; i < d; i++){
     sum += pow(x[i] - y[i], 2);
   }
@@ -62,10 +62,10 @@ int insert_if_closer(int k, int d,
   //the candidate point is closer or further away than that point.
   //this way, our max 'travel distance' is half of the array.
   bool ismid = false;
-  int midid = k - (k%2)/2;
+  int midid = (k - (k%2))/2;
   double middist = distance(d, &points[closest[midid]], query);
   if(cadist <= middist){
-    for(int i = 0; i < midid-1; i++){
+    for(int i = 0; i < midid; i++){
       if(cadist <= distance(d, &points[closest[i]], query)){
 	insert_index(candidate, i, k, closest);
 	return 1;
