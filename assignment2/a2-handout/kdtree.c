@@ -33,7 +33,7 @@ struct node* kdtree_create_node(int d, const double *points,
   //prepair arguments for create two childen:
   
   int l = m-1; // size of left side
-  int r = n-m;
+  int r = n-m-1;
 
   //left side
   if(l>1){
@@ -66,6 +66,8 @@ struct node* kdtree_create_node(int d, const double *points,
       } //new points
       newNode->left = kdtree_create_node(d, points_left, depth+1, l, indexes_left );
   }else{newNode->right = NULL;}
+
+  free(indexes);
   
   return newNode;
 }
@@ -89,7 +91,16 @@ struct kdtree *kdtree_create(int d, int n, const double *points) {
 }
 
 void kdtree_free_node(struct node *node) {
-  assert(0);
+  //DFS travsal the tree using recursion postorder
+  if (node == NULL){
+    return;
+  }
+  kdtree_free_node(node->left);
+  
+  kdtree_free_node(nod->right);
+
+  free(node);
+  
 }
 
 void kdtree_free(struct kdtree *tree) {
