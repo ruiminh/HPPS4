@@ -19,13 +19,25 @@ struct kdtree {
   struct node* root;
 };
 
-int compare(const double *points
+struct sort_env{
+  int d;
+  int axis;
+  const double *points;
+};
+
+//needs to access two points and the correct axis
+int compare(const int *ip, const int *jp, struct sort_env *env);
 
 struct node* kdtree_create_node(int d, const double *points,
                                 int depth, int n, int *indexes) {
   struct node *newNode=malloc(sizeof(struct node));
   int ax = depth % d;
   newNode->axis = ax;
+
+  struct sort_env env;
+  env.d = d;
+  env.axis = ax;
+  env.points = points;
   //To Do: here need to sort  points by the axis (a column)
   //using: hpps_sort(points, ax), I need to study sort.c and do it later.
   //update the indexes to a sorted index (increasing?)
@@ -163,4 +175,17 @@ void kdtree_svg_node(double scale, FILE *f, const struct kdtree *tree,
 void kdtree_svg(double scale, FILE* f, const struct kdtree *tree) {
   assert(tree->d == 2);
   kdtree_svg_node(scale, f, tree, 0, 0, 1, 1, tree->root);
+}
+
+
+
+int compare(const int *ip, const int *jp, struct sort_env* env){
+  int i = *ip;
+  int j = *jp;
+  int axis = env->axis;
+  int d = env->d;
+
+  double *x = &env->points[i*env->d];
+  double *y = &env->points[j*env->d];
+
 }
