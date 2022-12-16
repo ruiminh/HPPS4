@@ -24,9 +24,38 @@ struct node* kdtree_create_node(int d, const double *points,
   struct node *newNode=malloc(sizeof(struct node));
   int ax = depth % d;
   newNode->axis = ax;
-  //To Do: here need to sort  points by the axis (a column)
-  //using: hpps_sort(points, ax), I need to study sort.c and do it later.
-  //update the indexes to a sorted index (increasing?)
+
+  // sort  points' indexes by the axis (a column)
+  struct sort_env{
+    int c;
+    int d;
+    double *points;
+  }
+  //compare function for sorting
+  int cmp_indexes(const int *ip, const int *jp, struct sort_env* env) {
+     int i = *ip;
+     int j = *jp;
+     double *x = &env->points[i*env->d];
+     double *y = &env->points[j*env->d];
+     int c = env->c;
+
+     if (x[c] < y[c]) {
+        return -1;
+      } else if (x[c] == y[c]) {
+        return 0;
+      } else {
+        return 1;
+      }
+   }
+  
+   struct sort_env env;
+   env.points=points;
+   env.d = d;
+   env.c = ax;
+   //sort the index
+   hpps_quicksort(&indexes[k],k, sizeof(int),
+                          (int(*)(cost void*, const void*, void*))cmp_indexes,
+			  &env);
 
   int m = n/2+1;
   newNode->point_index= indexes[m];//use the index of mean value
