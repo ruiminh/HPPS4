@@ -19,6 +19,8 @@ struct kdtree {
   struct node* root;
 };
 
+int compare(const double *points
+
 struct node* kdtree_create_node(int d, const double *points,
                                 int depth, int n, int *indexes) {
   struct node *newNode=malloc(sizeof(struct node));
@@ -64,7 +66,7 @@ struct node* kdtree_create_node(int d, const double *points,
       for (int i=0; i< r; i++){
          points_right[i]=points[indexes[i]];
       } //new points
-      newNode->left = kdtree_create_node(d, points_left, depth+1, l, indexes_left );
+      newNode->left = kdtree_create_node(d, points_right, depth+1, l, indexes_right );
   }else{newNode->right = NULL;}
 
   free(indexes);

@@ -41,7 +41,7 @@ int insert_if_closer(int k, int d,
   //firstly, determine whether there are empty entries in closest.
   //we do this by initially checking if the last entry is -1, and if it is
   //we check the first entry - if it is -1, we add our entry here. Otherwise,
-  //we check the midway entry - etc...
+  //we check the next entry - etc...
 
   if(closest[k-1] == -1){
     for(int i = 0; i < k; i++){
