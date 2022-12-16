@@ -203,13 +203,3 @@ void kdtree_svg(double scale, FILE* f, const struct kdtree *tree) {
 
 
 
-int compare(const int *ip, const int *jp, struct sort_env* env){
-  int i = *ip;
-  int j = *jp;
-  int axis = env->axis;
-  int d = env->d;
-
-  double *x = &env->points[i*env->d];
-  double *y = &env->points[j*env->d];
-
-}
