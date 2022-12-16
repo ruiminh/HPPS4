@@ -21,7 +21,53 @@ struct kdtree {
 
 struct node* kdtree_create_node(int d, const double *points,
                                 int depth, int n, int *indexes) {
-  assert(0);
+  struct node *newNode=malloc(sizeof(struct node));
+  int ax = depth % d;
+  newNode->axis = ax;
+  //To Do: here need to sort  points by the axis (a column)
+  //using: hpps_sort(points, ax), I need to study sort.c and do it later.
+  //update the indexes to a sorted index (increasing?)
+
+  int m = n/2+1;
+  newNode->point_index= indexes[m];//use the index of mean value
+  //prepair arguments for create two childen:
+  
+  int l = m-1; // size of left side
+  int r = n-m;
+
+  //left side
+  if(l>1){
+      //left half indexes, the points are smaller than mean:
+      int *indexes_left = malloc(l*sizeof(int32_t));
+      for(i=0; i<l; i++){
+          indexes_left[i]=indexes[i];
+      }// new indexes
+
+      //left half points, according left side indexes
+      const double *points_left = malloc(l*sizeof(const double));
+      for (i=0; i< m-1; i++){
+         points_left[i]=points[indexes[i]];
+      } //new points
+      newNode->left = kdtree_create_node(d, points_left, depth+1, l, indexes_left );
+  }else{newNode->left = NULL; }
+
+  //right side
+  if(r>1){
+      
+      int *indexes_right = malloc(r*sizeof(int32_t));
+      for(i=0; i>r; i++){
+          indexes_right[i]=indexes[i+l];
+      }// new indexes
+
+  
+      const double *points_right = malloc(r*sizeof(const double));
+      for (i=0; i< r; i++){
+         points_right[i]=points[indexes[i]];
+      } //new points
+      newNode->left = kdtree_create_node(d, points_left, depth+1, l, indexes_left );
+  }else{newNode->right = NULL;}
+  
+  return newNode;
 }
 
 struct kdtree *kdtree_create(int d, int n, const double *points) {
