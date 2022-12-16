@@ -20,13 +20,14 @@ struct kdtree {
 };
 
 struct sort_env{
-  int d;
-  int axis;
-  const double *points;
+    int c;
+    int d;
+    const double *points;
 };
 
-//needs to access two points and the correct axis
-int compare(const int *ip, const int *jp, struct sort_env *env);
+
+//compare function for sorting
+int cmp_indexes(const int *ip, const int *jp, struct sort_env* env);
 
 struct node* kdtree_create_node(int d, const double *points,
                                 int depth, int n, int *indexes) {
@@ -35,78 +36,33 @@ struct node* kdtree_create_node(int d, const double *points,
   newNode->axis = ax;
 
   // sort  points' indexes by the axis (a column)
-  struct sort_env{
-    int c;
-    int d;
-    double *points;
-  }
-  //compare function for sorting
-  int cmp_indexes(const int *ip, const int *jp, struct sort_env* env) {
-     int i = *ip;
-     int j = *jp;
-     double *x = &env->points[i*env->d];
-     double *y = &env->points[j*env->d];
-     int c = env->c;
 
-     if (x[c] < y[c]) {
-        return -1;
-      } else if (x[c] == y[c]) {
-        return 0;
-      } else {
-        return 1;
-      }
-   }
-  
    struct sort_env env;
    env.points=points;
    env.d = d;
    env.c = ax;
    //sort the index
-   hpps_quicksort(&indexes[k],k, sizeof(int),
-                          (int(*)(cost void*, const void*, void*))cmp_indexes,
+   hpps_quicksort(indexes,n, sizeof(int),
+                          (int(*)(const void*, const void*, void*))cmp_indexes,
 			  &env);
 
   int m = n/2+1;
   newNode->point_index= indexes[m];//use the index of mean value
   //prepair arguments for create two childen:
-  
+
   int l = m-1; // size of left side
   int r = n-m-1;
 
   //left side
   if(l>1){
-      //left half indexes, the points are smaller than mean:
-      int *indexes_left = malloc(l*sizeof(int));
-      for(int i=0; i<l; i++){
-          indexes_left[i]=indexes[i];
-      }// new indexes
-
-      //left half points, according left side indexes
-      const double *points_left = malloc(l*sizeof(const double));
-      for (int i=0; i< m-1; i++){
-         points_left[i]=points[indexes[i]];
-      } //new points
-      newNode->left = kdtree_create_node(d, points_left, depth+1, l, indexes_left );
+    newNode->left = kdtree_create_node(d, points, depth+1, l, indexes);
   }else{newNode->left = NULL; }
 
   //right side
   if(r>1){
-      
-      int *indexes_right = malloc(r*sizeof(int));
-      for(int i=0; i>r; i++){
-          indexes_right[i]=indexes[i+l];
-      }// new indexes
-
-  
-      const double *points_right = malloc(r*sizeof(const double));
-      for (int i=0; i< r; i++){
-         points_right[i]=points[indexes[i]];
-      } //new points
-      newNode->left = kdtree_create_node(d, points_right, depth+1, l, indexes_right );
+    newNode->right = kdtree_create_node(d, &points[m*d], depth+1, r, &indexes[m*d]);
   }else{newNode->right = NULL;}
 
-  free(indexes);
-  
   return newNode;
 }
 
@@ -202,4 +158,20 @@ void kdtree_svg(double scale, FILE* f, const struct kdtree *tree) {
 }
 
 
+int cmp_indexes(const int *ip, const int *jp, struct sort_env* env) {
+  int i = *ip;
+  int j = *jp;
+  double *x = &env->points[i*env->d];
+  double *y = &env->points[j*env->d];
+  int c = env->c;
 
+  if (x[c] < y[c]) {
+    return -1;
+  }
+  else if (x[c] == y[c]) {
+    return 0;
+  }
+  else {
+    return 1;
+  }
+}
