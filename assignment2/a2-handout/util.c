@@ -63,22 +63,23 @@ int insert_if_closer(int k, int d,
   //this way, our max 'travel distance' is half of the array.
   bool ismid = false;
   int midid = (k - (k%2))/2;
-  double middist = distance(d, &points[closest[midid]], query);
+  double middist = distance(d, &points[closest[midid]*d], query);
   if(cadist <= middist){
     for(int i = 0; i < midid; i++){
-      if(cadist <= distance(d, &points[closest[i]], query)){
+      if(cadist <= distance(d, &points[closest[i]*d], query)){
 	insert_index(candidate, i, k, closest);
 	return 1;
       }
     }
     ismid = true;
   }
-  else if(ismid){
+  if(ismid){
     insert_index(candidate, midid, k, closest);
+    return 1;
   }
   else{
     for(int i = midid + 1; i < k; i++){
-      if(cadist <= distance(d, &points[closest[i]], query)){
+      if(cadist <= distance(d, &points[closest[i]*d], query)){
 	insert_index(candidate, i, k, closest);
 	return 1;
       }
