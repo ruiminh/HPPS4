@@ -38,14 +38,14 @@ struct node* kdtree_create_node(int d, const double *points,
   //left side
   if(l>1){
       //left half indexes, the points are smaller than mean:
-      int *indexes_left = malloc(l*sizeof(int32_t));
-      for(i=0; i<l; i++){
+      int *indexes_left = malloc(l*sizeof(int));
+      for(int i=0; i<l; i++){
           indexes_left[i]=indexes[i];
       }// new indexes
 
       //left half points, according left side indexes
       const double *points_left = malloc(l*sizeof(const double));
-      for (i=0; i< m-1; i++){
+      for (int i=0; i< m-1; i++){
          points_left[i]=points[indexes[i]];
       } //new points
       newNode->left = kdtree_create_node(d, points_left, depth+1, l, indexes_left );
@@ -54,14 +54,14 @@ struct node* kdtree_create_node(int d, const double *points,
   //right side
   if(r>1){
       
-      int *indexes_right = malloc(r*sizeof(int32_t));
-      for(i=0; i>r; i++){
+      int *indexes_right = malloc(r*sizeof(int));
+      for(int i=0; i>r; i++){
           indexes_right[i]=indexes[i+l];
       }// new indexes
 
   
       const double *points_right = malloc(r*sizeof(const double));
-      for (i=0; i< r; i++){
+      for (int i=0; i< r; i++){
          points_right[i]=points[indexes[i]];
       } //new points
       newNode->left = kdtree_create_node(d, points_left, depth+1, l, indexes_left );
@@ -97,7 +97,7 @@ void kdtree_free_node(struct node *node) {
   }
   kdtree_free_node(node->left);
   
-  kdtree_free_node(nod->right);
+  kdtree_free_node(node->right);
 
   free(node);
   
