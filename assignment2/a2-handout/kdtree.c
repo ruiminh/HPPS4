@@ -105,7 +105,21 @@ void kdtree_free(struct kdtree *tree) {
 void kdtree_knn_node(const struct kdtree *tree, int k, const double* query,
                      int *closest, double *radius,
                      const struct node *node) {
-  assert(0);
+  if(node == NULL){
+    return;
+  }
+  else insert_if_closer(k, tree->d, tree->points, closest, query, node->point_index);
+
+  double diff = tree->points[node->point_index + node->axis] - query[node->axis];
+
+  *radius = distance(tree->d, query, &tree->points[closest[k-1]*tree->d]);
+
+  if (diff >= 0 && *radius > fabs(diff)){
+    kdtree_knn_node(tree, k, query, closest, radius, node->left);
+  }
+  if (diff <= 0 && *radius > fabs(diff)){
+    kdtree_knn_node(tree, k, query, closest, radius, node->right);
+  }
 }
 
 int* kdtree_knn(const struct kdtree *tree, int k, const double* query) {
@@ -161,8 +175,8 @@ void kdtree_svg(double scale, FILE* f, const struct kdtree *tree) {
 int cmp_indexes(const int *ip, const int *jp, struct sort_env* env) {
   int i = *ip;
   int j = *jp;
-  double *x = &env->points[i*env->d];
-  double *y = &env->points[j*env->d];
+  const double *x = &env->points[i*env->d];
+  const double *y = &env->points[j*env->d];
   int c = env->c;
 
   if (x[c] < y[c]) {
