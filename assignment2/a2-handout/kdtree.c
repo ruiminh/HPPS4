@@ -117,6 +117,9 @@ void kdtree_knn_node(const struct kdtree *tree, int k, const double* query,
     if(closest[i] != -1){
       kindex = i;
     }
+    else{
+      break;
+    }
   }
 
   *radius = distance(tree->d, query, &tree->points[closest[kindex]*tree->d]);
