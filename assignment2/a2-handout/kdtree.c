@@ -46,11 +46,11 @@ struct node* kdtree_create_node(int d, const double *points,
                           (int(*)(const void*, const void*, void*))cmp_indexes,
 			  &env);
 
-  int m = n/2+1;
-  newNode->point_index= indexes[m];//use the index of mean value
+  int m = (n - n%2)/2 - 1;
+  newNode->point_index= indexes[m];//use the index of median value
   //prepair arguments for create two childen:
 
-  int l = m-1; // size of left side
+  int l = m; // size of left side
   int r = n-m-1;
 
   //left side
@@ -60,7 +60,7 @@ struct node* kdtree_create_node(int d, const double *points,
 
   //right side
   if(r>1){
-    newNode->right = kdtree_create_node(d, &points[m*d], depth+1, r, &indexes[m*d]);
+    newNode->right = kdtree_create_node(d, &points[(m+1)*d], depth+1, r, &indexes[m+1]);
   }else{newNode->right = NULL;}
 
   return newNode;
