@@ -43,6 +43,13 @@ int insert_if_closer(int k, int d,
   //we check the first entry - if it is -1, we add our entry here. Otherwise,
   //we check the next entry - etc...
 
+  //before any of that, check if the candidate is already on the list
+  for(int i = 0; i < k; i++){
+    if(closest[i] == candidate){
+      return 0;
+    }
+  }
+
   if(closest[k-1] == -1){
     for(int i = 0; i < k; i++){
       if(closest[i] == -1){
