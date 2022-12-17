@@ -110,7 +110,7 @@ void kdtree_knn_node(const struct kdtree *tree, int k, const double* query,
   }
   else insert_if_closer(k, tree->d, tree->points, closest, query, node->point_index);
 
-  double diff = tree->points[node->point_index + node->axis] - query[node->axis];
+  double diff = tree->points[node->point_index*tree->d + node->axis] - query[node->axis];
   int kindex = 0;
   //find furthest away element
   for(int i = 0; i < k; i++){

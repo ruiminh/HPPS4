@@ -43,19 +43,17 @@ int insert_if_closer(int k, int d,
   //we check the first entry - if it is -1, we add our entry here. Otherwise,
   //we check the next entry - etc...
 
+
+  if(closest[0] == -1){
+    closest[0] = candidate;
+    return 1;
+  }
+
+
   //before any of that, check if the candidate is already on the list
   for(int i = 0; i < k; i++){
     if(closest[i] == candidate){
       return 0;
-    }
-  }
-
-  if(closest[k-1] == -1){
-    for(int i = 0; i < k; i++){
-      if(closest[i] == -1){
-	closest[i] = candidate;
-	return 1;
-      }
     }
   }
 
@@ -70,6 +68,11 @@ int insert_if_closer(int k, int d,
   //this way, our max 'travel distance' is half of the array.
   bool ismid = false;
   int midid = (k - (k%2))/2;
+
+  while(closest[midid] == -1){
+    midid--;
+  }
+
   double middist = distance(d, &points[closest[midid]*d], query);
   if(cadist <= middist){
     for(int i = 0; i < midid; i++){
