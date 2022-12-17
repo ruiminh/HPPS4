@@ -46,21 +46,21 @@ struct node* kdtree_create_node(int d, const double *points,
                           (int(*)(const void*, const void*, void*))cmp_indexes,
 			  &env);
 
-  int m = (n - n%2)/2 - 1;
+  int m = (n - n%2)/2;
   newNode->point_index= indexes[m];//use the index of median value
   //prepair arguments for create two childen:
 
   int l = m; // size of left side
-  int r = n-m-1;
+  int r = n - m;
 
   //left side
   if(l>1){
-    newNode->left = kdtree_create_node(d, points, depth+1, l, indexes);
+    newNode->left = kdtree_create_node(d, points, depth+1, l , indexes);
   }else{newNode->left = NULL; }
 
   //right side
   if(r>1){
-    newNode->right = kdtree_create_node(d, &points[(m+1)*d], depth+1, r, &indexes[m+1]);
+    newNode->right = kdtree_create_node(d, points, depth+1, r, &indexes[m]);
   }else{newNode->right = NULL;}
 
   return newNode;
@@ -111,8 +111,15 @@ void kdtree_knn_node(const struct kdtree *tree, int k, const double* query,
   else insert_if_closer(k, tree->d, tree->points, closest, query, node->point_index);
 
   double diff = tree->points[node->point_index + node->axis] - query[node->axis];
+  int kindex = 0;
+  //find furthest away element
+  for(int i = 0; i < k; i++){
+    if(closest[i] != -1){
+      kindex = i-1;
+    }
+  }
 
-  *radius = distance(tree->d, query, &tree->points[closest[k-1]*tree->d]);
+  *radius = distance(tree->d, query, &tree->points[closest[kindex]*tree->d]);
 
   if (diff >= 0 && *radius > fabs(diff)){
     kdtree_knn_node(tree, k, query, closest, radius, node->left);
