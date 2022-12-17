@@ -89,7 +89,11 @@ int insert_if_closer(int k, int d,
   }
   else{
     for(int i = midid + 1; i < k; i++){
-      if(cadist <= distance(d, &points[closest[i]*d], query)){
+      if(closest[i] == -1){
+	insert_index(candidate, i, k, closest);
+	return 1;
+      }
+      else if(cadist <= distance(d, &points[closest[i]*d], query)){
 	insert_index(candidate, i, k, closest);
 	return 1;
       }
