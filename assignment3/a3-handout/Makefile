@@ -1,8 +1,8 @@
 CC?=gcc
 CFLAGS?=-Wall -Wextra -pedantic -std=gnu99 -g
 LDFLAGS?=-lm
-PROGRAMS=random_ids id_query_naive coord_query_naive nonotfound
-TESTS=test_id_naive
+PROGRAMS=random_ids id_query_naive id_query_indexed id_query_binsort coord_query_naive nonotfound trim_output
+TESTS=test_id_naive test_id_indexed
 
 .PHONY: all test clean ../src.zip
 
@@ -10,6 +10,9 @@ all: $(PROGRAMS)
 
 nonoutfound: nonotfound.c
 	gcc -o nonotfound nonotfound.c $(CFLAGS)
+
+trim_output: trim_output.c
+	gcc -o trim_output trim_output.c $(CFLAGS)
 
 random_ids: random_ids.o record.o
 	gcc -o $@ $^ $(LDFLAGS)
@@ -39,6 +42,14 @@ test_id_naive:
 	./random_ids 19999records.tsv | head -n 1000 > 1000ids
 	./id_query_naive 19999records.tsv < 1000ids > 1000queries
 	./nonotfound 1000queries
+
+test_id_indexed:
+	./id_query_indexed 19999records.tsv < 1000ids > 1000indexedqueries
+	./trim_output 1000indexedqueries > 1kiqt
+	./trim_output 1000queries > 1kqt
+	diff 1kqt 1kiqt
+	rm 1kqt
+	rm 1kiqt
 
 clean:
 	rm -rf core *.o $(PROGRAMS)
