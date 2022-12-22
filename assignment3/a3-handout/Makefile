@@ -2,7 +2,7 @@ CC?=gcc
 CFLAGS?=-Wall -Wextra -pedantic -std=gnu99 -g
 LDFLAGS?=-lm
 PROGRAMS=random_ids id_query_naive id_query_indexed id_query_binsort coord_query_naive nonotfound trim_output qtimes random_coords
-TESTS=test_id_naive test_id_indexed test_id_binsort test_qtimes test_coord_naive test_cleanup
+TESTS=test_make_sample test_id_naive test_id_indexed test_id_binsort test_qtimes test_coord_naive test_cleanup
 
 .PHONY: all test clean ../src.zip
 
@@ -44,6 +44,9 @@ sort.o: sort.c
 test: $(TESTS)
 	@set e; for test in $(TESTS); do echo ./$$test; ./$$test; done
 
+test_make_sample:
+	head -n 20000 planet-latest_geonames.tsv > 19999records.tsv
+
 test_id_naive:
 	./random_ids 19999records.tsv | head -n 1000 > 1000ids
 	./id_query_naive 19999records.tsv < 1000ids > 1000queries
@@ -77,6 +80,8 @@ test_cleanup:
 	rm 1000binsortqueries
 	rm 1kbsqt
 	rm 1000cq
+	rm 1000coords
+	rm 1000ids
 
 clean:
 	rm -rf core *.o $(PROGRAMS)
