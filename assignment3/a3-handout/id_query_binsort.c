@@ -39,7 +39,7 @@ struct indexed_data* mk_indexed(struct record* rs, int n) {
   //memcpy(srs, rs, n*sizeof(struct record));
   //qsort(srs,n,sizeof(struct record), (int(*)(void*, void*))compare_ids);
   
-  qsort(rs,n,sizeof(struct index_record), (int(*)(const void*, const void*))compare_ids);
+  qsort(rs,n,sizeof(struct record), (int(*)(const void*, const void*))compare_ids);
   struct indexed_data *ind = malloc(sizeof(struct indexed_data));
   ind->n = n;
   struct index_record *irs = malloc(n*sizeof(struct index_record));

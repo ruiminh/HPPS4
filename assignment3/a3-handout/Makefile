@@ -1,8 +1,8 @@
 CC?=gcc
 CFLAGS?=-Wall -Wextra -pedantic -std=gnu99 -g
 LDFLAGS?=-lm
-PROGRAMS=random_ids id_query_naive id_query_indexed id_query_binsort coord_query_naive nonotfound trim_output
-TESTS=test_id_naive test_id_indexed
+PROGRAMS=random_ids id_query_naive id_query_indexed id_query_binsort coord_query_naive nonotfound trim_output qtimes
+TESTS=test_id_naive test_id_indexed test_id_binsort test_qtimes test_cleanup
 
 .PHONY: all test clean ../src.zip
 
@@ -13,6 +13,9 @@ nonoutfound: nonotfound.c
 
 trim_output: trim_output.c
 	gcc -o trim_output trim_output.c $(CFLAGS)
+
+qtimes: qtimes.c
+	gcc -o qtimes qtimes.c $(CFLAGS)
 
 random_ids: random_ids.o record.o
 	gcc -o $@ $^ $(LDFLAGS)
@@ -48,8 +51,23 @@ test_id_indexed:
 	./trim_output 1000indexedqueries > 1kiqt
 	./trim_output 1000queries > 1kqt
 	diff 1kqt 1kiqt
+
+test_id_binsort:
+	./id_query_binsort 19999records.tsv < 1000ids > 1000binsortqueries
+	./trim_output 1000binsortqueries > 1kbsqt
+	./trim_output 1000queries > 1kqt
+	diff 1kqt 1kbsqt
+
+test_qtimes:
+	./qtimes 1000queries 1000indexedqueries 1000binsortqueries
+
+test_cleanup:
+	rm 1000queries
 	rm 1kqt
+	rm 1000indexedqueries
 	rm 1kiqt
+	rm 1000binsortqueries
+	rm 1kbsqt
 
 clean:
 	rm -rf core *.o $(PROGRAMS)
