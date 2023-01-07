@@ -25,7 +25,7 @@ server_socket.listen()
 # This function will handle incoming requests
 def handle_request(client_socket):
     while True:
-        # Read the request from the client (using Internet Explorer byte size for GET)
+        # Read the request from the client (using Internet Explorer byte size for requests, should be pleeenty)
         request = client_socket.recv(2083).decode("utf-8")
 
         # Split the request into lines
@@ -144,9 +144,10 @@ def handle_request(client_socket):
                 # If the file has been modified, send a "412 Precondition Failed" response
                 response_header = "HTTP/1.1 412 Precondition Failed\r\n"
                 client_socket.send(response_header.encode("utf-8"))
+                client_socket.close()
                 return
 
-        # Send a response header to the client
+        # Prepare response header for succesful request
         response_header = "HTTP/1.1 200 OK\r\nContent-Type: {}\r\nContent-Length: {}\r\n".format(mimetypes.guess_type(path[1:])[0],len(response_body))
 
         response_header = add_headers(response_header, {"Host", "Connection", "User-Agent", "Accept", "Accept-Encoding"}, headers)
@@ -156,22 +157,16 @@ def handle_request(client_socket):
             file_modified_time_str = time.strftime("%a, %d %b %Y %H:%M:%S %Z", file_modified_time)
             response_header += "Last-Modified: {}\r\n".format(file_modified_time_str)
 
+        if "Accept-Encoding" in headers:
+            if headers["Accept-Encoding"].__contains__("gzip"):
+                response_body = zlib.compress(response_body)
+                response_header += "Encoding: gzip\r\n"
+
         # Add an empty line to indicate the end of the headers
         response_header += "\r\n"
 
-        if "Accept-Encoding" in headers:
-            if headers["Accept-Encoding"].__contains__("gzip"):
-                compressed_contents = zlib.compress(response_body.encode("utf-8"))
-                client_socket.send(response_header.encode("utf-8"))
-                client_socket.send(compressed_contents)
-                return
-
-
         # Send the response header to the client
-        client_socket.send(response_header.encode("utf-8"))
-
-        # Send the static content to the client
-        client_socket.send(response_body)
+        client_socket.send(response_header.encode("utf-8") + response_body)
 
         # Handle the Connection header
         if "Connection" in headers:
@@ -185,6 +180,8 @@ def handle_request(client_socket):
 def send_response_header(client_socket:socket.socket, response_header:str, include_headers:list, headers, encoding:str):
     #Add headers
     response_header = add_headers(response_header, include_headers, headers)
+    # Add an empty line to indicate the end of the headers
+    response_header += "\r\n"
     
     #Standard encoding
     if encoding == "":
@@ -199,8 +196,7 @@ def add_headers(response_header:str, include_headers:list, headers):
         if header_name in headers:
             response_header += f"{header_name}: {headers[header_name]}\r\n"
 
-    # Add an empty line to indicate the end of the headers
-    response_header += "\r\n"
+
 
     return response_header
 

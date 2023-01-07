@@ -1,6 +1,7 @@
 import socket
 import time
 import argparse
+import zlib
 
 parser = argparse.ArgumentParser()
 
@@ -55,11 +56,44 @@ request = request_line + headers + "\r\n"
 # Send the request to the server
 client_socket.send(request.encode("utf-8"))
 
-# Receive the response from the server
-response = client_socket.recv(2083).decode("utf-8")
+# Receive the response in chunks
+response = b""
+while True:
+    chunk = client_socket.recv(1024)
+    if not chunk:
+        break
+    response += chunk
+
+# Split the response into header and body
+header, body = response.split(b"\r\n\r\n", 1)
+
+header = header.decode()
+
+# Make 'dictionary' of headers
+headers = {}
+for line in header.split("\r\n")[1:]:
+    if ": " in line:
+        key, value = line.split(": ", 1)
+        headers[key] = value
 
 # Print the response
-print(response)
+print(header)
+
+if not body:
+    client_socket.close()
+    exit
+
+print("\r\n")
+
+#Possibly decompress body and then print
+if not "Encoding" in headers:
+    print(body.decode())
+elif headers["Encoding"] == "gzip":
+    decomp_body = zlib.decompress(body)
+    try:
+        print(decomp_body.decode())
+    except:
+        print(decomp_body)
 
 # Close the socket
 client_socket.close()
