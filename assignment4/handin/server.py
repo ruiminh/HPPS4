@@ -1,6 +1,7 @@
 import socket
 import threading
 import time
+from datetime import datetime
 import os
 import argparse
 import zlib
@@ -64,17 +65,7 @@ def handle_request(client_socket):
 
         else:
             # Generate an HTML page containing a listing of the files and directories in the directory
-            listing = "<html><head><title>Directory Listing</title></head><body>\n"
-            listing += "\t<h1>Directory Listing</h1>\n"
-            listing += "\t\t<hr>"
-            listing += "<ul>\n"
-            for item in os.listdir(path[1:]):
-                listing += "\t\t\t<li><a href='{}'>{}</a></li>\n".format(item, item)
-            listing += "\t\t</ul>"
-            listing += "<hr>\n"
-            listing += "</body></html>"
-
-            index_contents = listing
+            index_contents = generate_listing(path)
         
         # Make a directory list for easier sorting later
         dirlist = []
@@ -127,27 +118,8 @@ def handle_request(client_socket):
         # Send a response header to the client
         response_header = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: {}\r\n".format(len(index_contents))
 
-        # Add the "Host" header to the response if it was included in the request
-        if "Host" in headers:
-            response_header += "Host: {}\r\n".format(headers["Host"])
-
-        # Add the "Connection" header to the response if it was included in the request
-        if "Connection" in headers:
-            response_header += "Connection: {}\r\n".format(headers["Connection"])
-
-        # Add the "User-Agent" header to the response if it was included in the request
-        if "User-Agent" in headers:
-            response_header += "User-Agent: {}\r\n".format(headers["User-Agent"])
-
-        # Add the "Accept" header to the response if it was included in the request
-        if "Accept" in headers:
-            response_header += "Accept: {}\r\n".format(headers["Accept"])
-
-        # Add the "Accept-Encoding" header to the response if it was included in the request
-        if "Accept-Encoding" in headers:
-            response_header += "Accept-Encoding: {}\r\n".format(headers["Accept-Encoding"])
-
-        
+        response_header = add_headers(response_header, {"Host", "Connection", "User-Agent", "Accept", "Accept-Encoding"}, headers)
+    
         # Add the "Last-Modified" header to the response, using the modification time of the file
         if "If-Modified-Since" in headers or "If-Unmodified-Since" in headers:
             file_modified_time_str = time.strftime("%a, %d %b %Y %H:%M:%S %Z", file_modified_time)
@@ -173,27 +145,56 @@ def handle_request(client_socket):
     # Otherwise, send a 404 response
     else:
         response_header = "HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\nContent-Length: 0\r\n"
-
-        # Add the "Host" header to the response if it was included in the request
-        if "Host" in headers:
-            response_header += "Host: {}\r\n".format(headers["Host"])
-
-        # Add the "Connection" header to the response if it was included in the request
-        if "Connection" in headers:
-            response_header += "Connection: {}\r\n".format(headers["Connection"])
-
-        # Add the "User-Agent" header to the response if it was included in the request
-        if "User-Agent" in headers:
-            response_header += "User-Agent: {}\r\n".format(headers["User-Agent"])
-
-        # Add an empty line to indicate the end of the headers
-        response_header += "\r\n"
-
-        # Send the response header to the client
-        client_socket.send(response_header.encode("utf-8"))
+        
+        send_response_header(client_socket, response_header, {"Host", "Connection", "User-Agent"}, headers, "utf-8")
 
     # Close the client socket
     client_socket.close()
+
+def send_response_header(client_socket:socket.socket, response_header:str, include_headers:list, headers, encoding:str):
+    #Add headers
+    response_header = add_headers(response_header, include_headers, headers)
+    
+    #Standard encoding
+    if encoding == "":
+        encoding = "utf-8"
+    
+    client_socket.send(response_header.encode(encoding))
+    
+
+def add_headers(response_header:str, include_headers:list, headers):
+    #Add requested headers
+    for header_name in include_headers:
+        if header_name in headers:
+            response_header += f"{header_name}: {headers[header_name]}\r\n"
+
+    # Add an empty line to indicate the end of the headers
+    response_header += "\r\n"
+
+    return response_header
+
+
+def generate_listing(path):
+    # Generate an HTML page containing a listing of the files and directories in the directory
+    listing = "<html><head><title>Directory Listing</title></head><body>\n"
+    listing += "  <h1>Directory Listing</h1>\n"
+    listing += "    <hr>"
+    listing += "<ul>\n"
+
+    for item in os.listdir(path[1:]):
+            # Get the last-modified timestamp of the item
+        last_modified = os.path.getmtime(os.path.join(path[1:], item))
+
+        # Format the timestamp as a human-readable string
+        last_modified_string = datetime.fromtimestamp(last_modified).strftime("%Y-%m-%d %H:%M:%S")
+
+        # Add the item and its last-modified date to the HTML response
+        listing += f"      <li><a href='{item}'>{item}</a> (last modified: {last_modified_string})</li>\n"
+
+    listing += "    </ul>"
+    listing += "<hr>\n"
+    listing += "</body></html>"
+    return listing
 
 # Loop forever to handle incoming requests
 while True:
