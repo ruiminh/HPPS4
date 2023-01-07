@@ -11,67 +11,97 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument("-f", "--folderpath", help= "specify a folder path for the server to run from", nargs="?", default="")
 parser.add_argument("-p", "--port", help="specify a port number to listen on", nargs="?", default = 8080)
+parser.add_argument("-ad", "--address", help="specify address to listen on (on given port). If none specified, listen on all addresses on the port.", nargs ="?", default = "")
 
 args = parser.parse_args()
 
-print(f"running on path: {args.folderpath} and port: {args.port}")
+print(f"running on path: {args.folderpath} and port: {args.port}, listening on address: {args.address} (any if empty)")
 # First, create a socket to listen for incoming connections
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_socket.bind(("", int(args.port)))
+server_socket.bind((args.address, int(args.port)))
 server_socket.listen()
 
 # This function will handle incoming requests
 def handle_request(client_socket):
-    # Read the request from the client (using Internet Explorer byte size for GET)
-    request = client_socket.recv(2083).decode("utf-8")
+    while True:
+        # Read the request from the client (using Internet Explorer byte size for GET)
+        request = client_socket.recv(2083).decode("utf-8")
 
-    # Split the request into lines
-    request_lines = request.split("\r\n")
+        # Split the request into lines
+        request_lines = request.split("\r\n")
 
-    # Get the request line (the first line of the request)
-    request_line = request_lines[0]
+        # Get the request line (the first line of the request)
+        request_line = request_lines[0]
 
-    # Split the request line into individual elements
-    request_line_elements = request_line.split(" ")
+        # Split the request line into individual elements
+        request_line_elements = request_line.split(" ")
 
-    # Get the method (the first element) and the path (the second element)
-    method = request_line_elements[0]
-    path = os.path.join(args.folderpath, request_line_elements[1])
+        # Get the method (the first element) and the path (the second element)
+        method = request_line_elements[0]
+        path = os.path.join(args.folderpath, request_line_elements[1])
 
-    # Get the HTTP headers from the request
-    headers = {}
-    for line in request_lines[1:]:
-        if ": " in line:
-            key, value = line.split(": ", 1)
-            headers[key] = value
-    
+        # Get the HTTP headers from the request
+        headers = {}
+        for line in request_lines[1:]:
+            if ": " in line:
+                key, value = line.split(": ", 1)
+                headers[key] = value
+        
+        isdir = os.path.isdir(path[1:])
+        isfile = os.path.isfile(path[1:])
 
-    # Check if the path is for a static file
-    if os.path.isdir(path[1:]):
+        #We have only implemented GET functionality, so we check for specifically GET requests
+        if method != "GET":
+            bad_request(client_socket)
 
-        # Prohibit user from accessing upper level directories
-        if path.__contains__(".."):
-            response_header = "HTTP/1.1 1337 naughty path\r\n"
-            client_socket.send(response_header.encode("utf-8"))
+        #Having both modified headers is ambiguous and should be treated as an error.
+        if "If-Modified-Since" in headers and "If-Unmodified-Since" in headers:
+            bad_request(client_socket)
+
+        #Check if the requested URI is valid (either a file or a directory)
+        if not (isdir or isfile):
+            response_header = "HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\nContent-Length: 0\r\n"
+            
+            send_response_header(client_socket, response_header, {"Host", "Connection", "User-Agent"}, headers, "utf-8")
             client_socket.close()
             return
-
-        index_path = os.path.join(path[1:], "index.html")
-        if os.path.isfile(index_path):
-            # Open the index.html file
-            with open(index_path, "r") as f:
-                # Read the contents of the file
-                index_contents = f.read()
-
-        else:
-            # Generate an HTML page containing a listing of the files and directories in the directory
-            index_contents = generate_listing(path)
         
-        # Make a directory list for easier sorting later
-        dirlist = []
-        for line in index_contents.splitlines():
-            if line.__contains__("href="):
-                dirlist.append(line.split(sep="'")[1])
+        if isdir:
+            # Prohibit user from accessing upper level directories
+            if path.__contains__(".."):
+                bad_request(client_socket)
+
+            index_path = os.path.join(path[1:], "index.html")
+            if os.path.isfile(index_path):
+                # Open the index.html file
+                with open(index_path, "r") as f:
+                    # Read the contents of the file
+                    index_contents = f.read()
+
+            else:
+                # Generate an HTML page containing a listing of the files and directories in the directory
+                index_contents = generate_listing(path)
+
+            response_body = index_contents.encode("utf-8")
+            
+            # Make a directory list for easier sorting later
+            dirlist = []
+            for line in index_contents.splitlines():
+                if line.__contains__("href="):
+                    dirlist.append(line.split(sep="'")[1])
+        
+        
+        elif isfile:
+            # Check that the file is an accepted type
+            #...
+
+            #Read the contents and prepare for sending
+            with open(path[1:], "rb") as file:
+                file_contents = file.read()
+            
+            response_body = file_contents
+
+
 
         # Check if the client included an "If-Modified-Since" header
         if "If-Modified-Since" in headers:
@@ -79,10 +109,7 @@ def handle_request(client_socket):
             try:
                 modified_since = time.strptime(headers["If-Modified-Since"], "%a, %d %b %Y %H:%M:%S")
             except:
-                response_header = "HTTP/1.1 400 Bad Request\r\n"
-                client_socket.send(response_header.encode("utf-8"))
-                client_socket.close()
-                return
+                bad_request(client_socket)
 
             # Get the modification time of the file
             file_modified_time = time.gmtime(os.path.getmtime(path[1:]))
@@ -99,11 +126,9 @@ def handle_request(client_socket):
         if "If-Unmodified-Since" in headers:
             # Get the timestamp from the header
             try:
-                unmodified_since = time.strptime(headers["If-Modified-Since"], "%a, %d %b %Y %H:%M:%S")
+                unmodified_since = time.strptime(headers["If-Unmodified-Since"], "%a, %d %b %Y %H:%M:%S")
             except:
-                response_header = "HTTP/1.1 400 Bad Request\r\n"
-                client_socket.send(response_header.encode("utf-8"))
-                client_socket.close()
+                bad_request(client_socket)
                 return
             # Get the modification time of the file
             file_modified_time = time.gmtime(os.path.getmtime(path[1:]))
@@ -116,10 +141,10 @@ def handle_request(client_socket):
                 return
 
         # Send a response header to the client
-        response_header = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: {}\r\n".format(len(index_contents))
+        response_header = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: {}\r\n".format(len(response_body))
 
         response_header = add_headers(response_header, {"Host", "Connection", "User-Agent", "Accept", "Accept-Encoding"}, headers)
-    
+
         # Add the "Last-Modified" header to the response, using the modification time of the file
         if "If-Modified-Since" in headers or "If-Unmodified-Since" in headers:
             file_modified_time_str = time.strftime("%a, %d %b %Y %H:%M:%S %Z", file_modified_time)
@@ -130,7 +155,7 @@ def handle_request(client_socket):
 
         if "Accept-Encoding" in headers:
             if headers["Accept-Encoding"].__contains__("gzip"):
-                compressed_contents = zlib.compress(index_contents.encode("utf-8"))
+                compressed_contents = zlib.compress(response_body.encode("utf-8"))
                 client_socket.send(response_header.encode("utf-8"))
                 client_socket.send(compressed_contents)
                 return
@@ -140,16 +165,16 @@ def handle_request(client_socket):
         client_socket.send(response_header.encode("utf-8"))
 
         # Send the static content to the client
-        client_socket.send(index_contents.encode("utf-8"))
+        client_socket.send(response_body)
 
-    # Otherwise, send a 404 response
-    else:
-        response_header = "HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\nContent-Length: 0\r\n"
-        
-        send_response_header(client_socket, response_header, {"Host", "Connection", "User-Agent"}, headers, "utf-8")
-
-    # Close the client socket
-    client_socket.close()
+        # Handle the Connection header
+        if "Connection" in headers:
+            if headers["Connection"] != "keep-alive":
+                client_socket.close()
+                return
+        else:
+            client_socket.close()
+            return
 
 def send_response_header(client_socket:socket.socket, response_header:str, include_headers:list, headers, encoding:str):
     #Add headers
@@ -195,6 +220,12 @@ def generate_listing(path):
     listing += "<hr>\n"
     listing += "</body></html>"
     return listing
+
+def bad_request(client_socket:socket.socket):
+        response_header = "HTTP/1.1 400 Bad Request\r\n"
+        client_socket.send(response_header.encode("utf-8"))
+        client_socket.close()
+        return
 
 # Loop forever to handle incoming requests
 while True:
