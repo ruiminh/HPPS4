@@ -6,6 +6,7 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument("-f", "--folderpath", help="specify folder path for your GET query", nargs="?", default="")
 parser.add_argument("-e", "--acceptencodings", help="specify which encodings to accept", nargs="*")
+parser.add_argument("-a", "--accept", help="specify which content-types are acceptable", nargs ="*")
 parser.add_argument("-ims", "--ifmodsince", help="specify date-time for when the If-Modified-Since header (Y-m-d H:M:S)", nargs="?", default=None)
 parser.add_argument("-ius", "--ifunmodsince", help="specify date-time for when the If-Unmodified-Since header (Y-m-d H:M:S)", nargs="?", default=None)
 parser.add_argument("-p", "--port", help="specify port number to send on", nargs ="?", default= 8080)
@@ -28,7 +29,14 @@ client_socket.connect(("localhost", int(args.port)))
 request_line = f"GET {args.folderpath} HTTP/1.1\r\n"
 
 # Create the headers
-headers = "Host: localhost\r\nUser-Agent: Python-Example-Client\r\nConnection: close\r\nAccept: text/html\r\n"
+headers = "Host: localhost\r\nUser-Agent: Python-Test-Client\r\nConnection: close\r\n"
+if args.accept:
+    headers += "Accept: "
+    for content_types in args.accept:
+        headers += f"{content_types}, "
+    headers = headers[:-2]
+    headers += "\r\n"
+
 if args.ifmodsince:
     headers += "If-Modified-Since: {}\r\n".format(time.strftime("%a, %d %b %Y %H:%M:%S", mod_time))
 if args.ifunmodsince:
@@ -38,6 +46,7 @@ if args.acceptencodings:
     headers += "Accept-Encoding: "
     for encoding in args.acceptencodings:
         headers += f"{encoding}, "
+    headers = headers[:-2]
     headers += "\r\n"
 
 # Create the full request

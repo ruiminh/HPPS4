@@ -5,6 +5,7 @@ from datetime import datetime
 import os
 import argparse
 import zlib
+import mimetypes
 
 # For arguments
 parser = argparse.ArgumentParser()
@@ -95,6 +96,11 @@ def handle_request(client_socket):
             # Check that the file is an accepted type
             #...
 
+            if "Accept" in headers and not file_meets_accept(path[1:], headers["Accept"]):
+                response_header = f"HTTP/1.1 406 Not Acceptable\r\n"
+                client_socket.send(response_header.encode("utf-8"))
+                client_socket.close()
+                return
             #Read the contents and prepare for sending
             with open(path[1:], "rb") as file:
                 file_contents = file.read()
@@ -141,7 +147,7 @@ def handle_request(client_socket):
                 return
 
         # Send a response header to the client
-        response_header = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: {}\r\n".format(len(response_body))
+        response_header = "HTTP/1.1 200 OK\r\nContent-Type: {}\r\nContent-Length: {}\r\n".format(mimetypes.guess_type(path[1:])[0],len(response_body))
 
         response_header = add_headers(response_header, {"Host", "Connection", "User-Agent", "Accept", "Accept-Encoding"}, headers)
 
@@ -221,11 +227,28 @@ def generate_listing(path):
     listing += "</body></html>"
     return listing
 
+# Responds with status 400 and closes the socket / connection
 def bad_request(client_socket:socket.socket):
         response_header = "HTTP/1.1 400 Bad Request\r\n"
         client_socket.send(response_header.encode("utf-8"))
         client_socket.close()
         return
+
+# Determines whether a file meets the Accept header criteria
+def file_meets_accept(file_path, accept_header):
+    content_type = mimetypes.guess_type(file_path)
+    
+    try:
+        accepted_types = accept_header.split(",")
+    except:
+        return True
+
+    if not accepted_types:
+        return True
+    elif content_type in accepted_types:
+        return True
+    else:
+        return False
 
 # Loop forever to handle incoming requests
 while True:
