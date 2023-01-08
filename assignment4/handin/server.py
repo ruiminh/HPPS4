@@ -54,10 +54,12 @@ def handle_request(client_socket):
         #We have only implemented GET functionality, so we check for specifically GET requests
         if method != "GET":
             bad_request(client_socket)
+            return
 
         #Having both modified headers is ambiguous and should be treated as an error.
         if "If-Modified-Since" in headers and "If-Unmodified-Since" in headers:
             bad_request(client_socket)
+            return
 
         #Check if the requested URI is valid (either a file or a directory)
         if not (isdir or isfile):
@@ -66,12 +68,18 @@ def handle_request(client_socket):
             send_response_header(client_socket, response_header, {"Host", "Connection", "User-Agent"}, headers, "utf-8")
             client_socket.close()
             return
-        
-        if isdir:
-            # Prohibit user from accessing upper level directories
-            if path.__contains__(".."):
-                bad_request(client_socket)
 
+        # Prohibit user from accessing upper level directories
+        if path[0] == '.':
+            bad_request(client_socket)
+            return
+        
+        if path.__contains__(".."):
+            bad_request(client_socket)
+            return
+
+        # If the path is to a directory/folder
+        if isdir:
             index_path = os.path.join(path[1:], "index.html")
             if os.path.isfile(index_path):
                 # Open the index.html file
@@ -116,6 +124,7 @@ def handle_request(client_socket):
                 modified_since = time.strptime(headers["If-Modified-Since"], "%a, %d %b %Y %H:%M:%S")
             except:
                 bad_request(client_socket)
+                return
 
             # Get the modification time of the file
             file_modified_time = time.gmtime(os.path.getmtime(path[1:]))
@@ -196,8 +205,6 @@ def add_headers(response_header:str, include_headers:list, headers):
         if header_name in headers:
             response_header += f"{header_name}: {headers[header_name]}\r\n"
 
-
-
     return response_header
 
 
@@ -225,10 +232,9 @@ def generate_listing(path):
 
 # Responds with status 400 and closes the socket / connection
 def bad_request(client_socket:socket.socket):
-        response_header = "HTTP/1.1 400 Bad Request\r\n"
-        client_socket.send(response_header.encode("utf-8"))
+        msg = "HTTP/1.1 400 Bad Request\r\n"
+        client_socket.send(msg.encode("utf-8"))
         client_socket.close()
-        return
 
 # Determines whether a file meets the Accept header criteria
 def file_meets_accept(file_path, accept_header):

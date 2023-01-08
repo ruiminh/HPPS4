@@ -65,7 +65,12 @@ while True:
     response += chunk
 
 # Split the response into header and body
-header, body = response.split(b"\r\n\r\n", 1)
+header_body = response.split(b"\r\n\r\n", maxsplit=1)
+if len(header_body) == 2:
+    header, body = header_body
+else:
+    header = header_body[0]
+    body = b""
 
 header = header.decode()
 
